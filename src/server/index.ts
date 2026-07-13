@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-import { loginSchema } from './validate.js';
+import { loginSchema } from '../validation/validate.js';
 
 const app = express();
 app.use(express.json)
