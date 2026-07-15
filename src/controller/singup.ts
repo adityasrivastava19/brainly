@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import { loginSchema } from "../validation/validate.js";
 import bcrypt from "bcrypt";
 import user from "../model/user.js";
+import dotenv from "dotenv";
+dotenv.config();
 export async function  signup(req:Request,res:Response)
 {   try{
     //zod validation 
