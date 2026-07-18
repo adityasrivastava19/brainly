@@ -12,7 +12,7 @@ export async function createcontent(req: Request, res: Response) {
         }
         const { title, link, type, tag: tags } = result.data;
         //bring out the user id from the auth middleware
-        const userId = (req.user as { _id?: string })?._id;
+        const userId = (req.user as { userid?: string })?.userid;
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -45,45 +45,3 @@ export async function createcontent(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server error" })
     }
 }
-// V
-// alidate the request using your Zod schema.
-// Extract:
-// title
-// link
-// type
-// tag (array of strings)
-// For each tag:
-// Check if it already exists in the Tag collection.
-// If it doesn't exist, create it.
-// Store its _id.
-// Create a Content document with:
-// title
-// link
-// type
-// userId (from auth middleware)
-// tags (array of ObjectIds)
-// Return:
-// 201 Created on success.
-// Appropriate error responses on validation or database failure.
-// Task 2: Get User Content
-
-// Implement:
-
-// GET /api/v1/content
-
-// Requirements:
-
-// Return only the logged-in user's content.
-// Populate the tags field.
-// Sort by newest first.
-// Task 3: Delete Content
-
-// Implement:
-
-// DELETE /api/v1/content/:id
-
-// Requirements:
-
-// Verify the content belongs to the logged-in user.
-// Delete it.
-// Return a success message.
