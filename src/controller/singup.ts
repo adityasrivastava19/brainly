@@ -33,6 +33,6 @@ export async function  signup(req:Request,res:Response)
 }
  catch(error)
  {
-
+    return res.status(500).json({message:"server error"});
  }
 }

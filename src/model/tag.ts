@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 const tag=new mongoose.Schema({
-    tittle:{
+    title:{
         type:String
     }
 })
