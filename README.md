@@ -1,12 +1,15 @@
 # Brainly Backend API
 
-Brainly is a personal knowledge management ("second brain") backend service. It allows users to securely save, tag, and organize various forms of content such as links, images, videos, and text notes.
+Brainly is a personal knowledge management ("second brain") backend service. It allows users to securely save, tag, and organize various forms of content such as links, images, videos, documents, tweets, and text notes.
+
+---
 
 ## 🚀 Technologies Used
 * **Runtime:** Node.js (ES Modules)
 * **Language:** TypeScript (`nodenext` configuration)
 * **Framework:** Express
 * **Database & ORM:** MongoDB & Mongoose
+* **Cryptography / Hashing:** bcrypt (10 rounds for passwords)
 * **Validation:** Zod
 * **Authentication:** JSON Web Tokens (JWT)
 * **Configuration:** dotenv
@@ -14,104 +17,163 @@ Brainly is a personal knowledge management ("second brain") backend service. It 
 ---
 
 ## 📁 Directory Structure
+
+Below is the directory layout of the project. Files are linked directly to their locations in the workspace for quick navigation:
+
 ```text
 brainly/
-├── dist/                    # Compiled JavaScript files (output of tsc)
+├── dist/                          # Compiled JavaScript files (output of tsc)
 ├── src/
-│   ├── db.ts                # Database connection configuration using Mongoose
-│   ├── index.ts             # Express application entry point
+│   ├── index.ts                   # Express server entry point & router mounting
+│   ├── db.ts                      # MongoDB connection helper (using Mongoose)
 │   ├── middleware/
-│   │   └── middleware.ts    # Authentication middleware using JWT
+│   │   └── middleware.ts          # JWT authentication middleware
+│   ├── controller/
+│   │   ├── login.ts               # Login / Signin controller
+│   │   ├── singup.ts              # User registration / Signup controller
+│   │   └── content.ts             # Content creation, retrieval (stub), and deletion
+│   ├── routes/
+│   │   ├── singnup.ts             # Router for POST /signup
+│   │   ├── signin.ts              # Router for POST /signin
+│   │   ├── content.ts             # Router for POST /content
+│   │   └── deleteContenet.ts      # Router for POST /content/delete
 │   ├── model/
-│   │   ├── content.ts       # Mongoose schema and model for user content
-│   │   ├── link.ts          # Mongoose schema for sharing/hashes
-│   │   ├── tag.ts           # Mongoose schema and model for tags
-│   │   └── user.ts          # Mongoose schema and model for users
+│   │   ├── user.ts                # Mongoose Schema & Model for Users
+│   │   ├── content.ts             # Mongoose Schema & Model for User Content
+│   │   ├── tag.ts                 # Mongoose Schema & Model for Content Tags
+│   │   └── link.ts                # Mongoose Schema & Model for Sharing / Hashes
 │   ├── types/
 │   │   └── express/
-│   │       └── index.d.ts   # Express request typings extension (user payload)
+│   │       └── index.d.ts         # Type declarations extending Express Request with 'user'
 │   ├── validation/
-│   │   └── validate.ts      # Schema validation logic using Zod
-│   └── workdone             # Tracking log file
-├── .env                     # Environment variables (gitignored)
-├── tsconfig.json            # TypeScript compiler configuration
-└── package.json             # NPM dependencies and build scripts
+│   │   ├── validate.ts            # Zod validation schema for user login/signup
+│   │   └── cotent.ts              # Zod validation schema for content payload
+│   └── workdone                   # Simple log tracking completed milestones
+├── .env                           # Environment variables configuration (gitignored)
+├── tsconfig.json                  # TypeScript compilation configuration
+└── package.json                   # Project scripts and dependencies
 ```
+
+* **Entry point:** [src/index.ts](file:///a:/web/week-15/brainly/src/index.ts)
+* **DB Setup:** [src/db.ts](file:///a:/web/week-15/brainly/src/db.ts)
+* **Validation Rules:** [src/validation/validate.ts](file:///a:/web/week-15/brainly/src/validation/validate.ts) & [src/validation/cotent.ts](file:///a:/web/week-15/brainly/src/validation/cotent.ts)
+* **JWT Auth Middleware:** [src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts)
 
 ---
 
-## 🛠️ Features & Implementation Status
+## 🛠️ API Documentation & Flow
 
-### 1. Database Connection & Models
-* **Database Connection ([src/db.ts](file:///a:/web/week-15/brainly/src/db.ts)):** Connects asynchronously to MongoDB using Mongoose, validating the presence of the `MONGO_URI` environment variable.
-* **Database Schemas ([src/model/](file:///a:/web/week-15/brainly/src/model)):**
-  * `User`: Contains unique `username` and `password`.
-  * `Content`: Contains references to `User` and `Tag`, and maintains standard fields (`title`, `link`, and a `type` enum: `"text" | "image" | "video"`).
-  * `Tag`: Stores unique/reusable category tags.
-  * `Link`: Handles shareable hash-based links mapping to specific users.
+### 🔐 Authentication API
 
-### 2. Request Validation
-* **Zod Schemas ([src/validation/validate.ts](file:///a:/web/week-15/brainly/src/validation/validate.ts)):**
-  * `loginSchema`: Validates inputs for credentials registration/login.
-    * **Username:** String length 3 to 10.
-    * **Password:** String length 8 to 20. Requires at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
+#### **1. Register a New User**
+* **Endpoint:** `POST /api/v1/signup` (or `POST /signup`)
+* **Route:** [src/routes/singnup.ts](file:///a:/web/week-15/brainly/src/routes/singnup.ts)
+* **Controller:** [src/controller/singup.ts](file:///a:/web/week-15/brainly/src/controller/singup.ts)
+* **Request Body (JSON):**
+  ```json
+  {
+    "username": "user123",
+    "password": "StrongPassword123!"
+  }
+  ```
+* **Validation Rules (`loginSchema` in [src/validation/validate.ts](file:///a:/web/week-15/brainly/src/validation/validate.ts)):**
+  * `username`: String (3 to 10 characters).
+  * `password`: String (8 to 20 characters), requiring at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
+* **Flow:** Validates body payload $\rightarrow$ Checks if username is already taken $\rightarrow$ Hashes password using `bcrypt` (10 rounds) $\rightarrow$ Creates user record in DB $\rightarrow$ Generates and returns a signed JWT token (expires in 7 days).
 
-### 3. Middleware & Security
-* **Authentication Middleware ([src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts)):**
-  * Intercepts requests and inspects the `Authorization` header for a `Bearer <token>` payload.
-  * Verifies the token validity using a configured JWT secret key.
-  * Extends the Express `Request` type ([src/types/express/index.d.ts](file:///a:/web/week-15/brainly/src/types/express/index.d.ts)) to attach the decoded user payload to `req.user` for downstream usage.
+#### **2. Sign In User**
+* **Endpoint:** `POST /api/v1/signin` (or `POST /signin`)
+* **Route:** [src/routes/signin.ts](file:///a:/web/week-15/brainly/src/routes/signin.ts)
+* **Controller:** [src/controller/login.ts](file:///a:/web/week-15/brainly/src/controller/login.ts)
+* **Request Body (JSON):** Same as signup.
+* **Flow:** Validates body payload $\rightarrow$ Retrieves user record by username $\rightarrow$ Compares hashed passwords via `bcrypt.compare` $\rightarrow$ Generates and returns a signed JWT token.
+
+---
+
+### 🗂️ Content Management API
+
+#### **1. Add Content Card**
+* **Endpoint:** `POST /api/v1/content` (or `POST /content`)
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Route:** [src/routes/content.ts](file:///a:/web/week-15/brainly/src/routes/content.ts)
+* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (specifically the `createcontent` function)
+* **Request Body (JSON):**
+  ```json
+  {
+    "title": "My Favorite Tweet",
+    "link": "https://twitter.com/example/status/123",
+    "type": "tweet",
+    "tag": ["tech", "learning"]
+  }
+  ```
+* **Validation Rules (`contentSchema` in [src/validation/cotent.ts](file:///a:/web/week-15/brainly/src/validation/cotent.ts)):**
+  * `title`: String (1 to 100 characters).
+  * `link`: String (must be a valid URL).
+  * `type`: Enum (`"document"`, `"tweet"`, `"youtube"`, `"link"`).
+  * `tag`: Array of strings (optional).
+* **Flow:** Verifies Bearer token with [auth middleware](file:///a:/web/week-15/brainly/src/middleware/middleware.ts) $\rightarrow$ Extracts `userid` $\rightarrow$ Checks for existing tags in the tags collection; creates and saves new ones if they don't exist $\rightarrow$ Creates the content document linking the `userid` and array of `tagref` ObjectIds $\rightarrow$ Populates and returns the complete object.
+
+#### **2. Delete Content Card**
+* **Endpoint:** `POST /api/v1/content/delete` (note: controller expects a URL parameter `id` as `req.params.id`)
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Route:** [src/routes/deleteContenet.ts](file:///a:/web/week-15/brainly/src/routes/deleteContenet.ts)
+* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (specifically the `deleteContent` function)
+* **Flow:** Verifies Bearer token $\rightarrow$ Validates whether `id` is a valid MongoDB ObjectId $\rightarrow$ Performs a `findOneAndDelete` matching the `_id` and the user's `userId`.
+
 ---
 
 ## 📈 Progress Checklist & Roadmap
 
 ### What's Done So Far
-- [x] Initial Express server setup ([src/index.ts](file:///a:/web/week-15/brainly/src/index.ts))
-- [x] MongoDB connection configuration with dotenv ([src/db.ts](file:///a:/web/week-15/brainly/src/db.ts))
-- [x] Mongoose database models defined (`User`, `Content`, `Tag`, `Link` schemas)
-- [x] Input validation schema with Zod (`loginSchema` validating usernames and robust passwords)
-- [x] Authentication middleware (`auth` validating Bearer JWT tokens)
-- [x] Express type declarations extended for custom `req.user` support
+- [x] Initial Express server setup & dotenv integration ([src/index.ts](file:///a:/web/week-15/brainly/src/index.ts))
+- [x] MongoDB connection setup with Mongoose ([src/db.ts](file:///a:/web/week-15/brainly/src/db.ts))
+- [x] Database model definitions ([src/model/](file:///a:/web/week-15/brainly/src/model/))
+- [x] Schema input validations using Zod ([src/validation/](file:///a:/web/week-15/brainly/src/validation/))
+- [x] Robust password hashing integration using `bcrypt` ([src/controller/singup.ts](file:///a:/web/week-15/brainly/src/controller/singup.ts))
+- [x] Complete JWT Authentication Flow ([src/controller/login.ts](file:///a:/web/week-15/brainly/src/controller/login.ts))
+- [x] JWT Bearer Token validation middleware ([src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts))
+- [x] Custom types extending Express request object with decoded token payload ([src/types/express/index.d.ts](file:///a:/web/week-15/brainly/src/types/express/index.d.ts))
+- [x] Create Content API with dynamic tag generation ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
+- [x] Delete Content controller implementation ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
 
 ### Future Tasks & Next Steps
-- [ ] **Password Hashing:** Integrate `bcrypt` to encrypt user passwords in the DB instead of storing plain text.
-- [ ] **Auth Endpoints:**
-  - [ ] `POST /api/v1/signup` - Register a new user (with Zod validation).
-  - [ ] `POST /api/v1/signin` - Authenticate credentials and return signed JWT.
-- [ ] **Content API Endpoints:**
-  - [ ] `POST /api/v1/content` - Add a new content item (requires auth, links to tags).
-  - [ ] `GET /api/v1/content` - Retrieve all content cards of the logged-in user.
-  - [ ] `DELETE /api/v1/content` - Remove an item from the database.
-- [ ] **Sharing System:**
-  - [ ] `POST /api/v1/brain/share` - Enable/disable public access link (generating/removing a share hash).
-  - [ ] `GET /api/v1/brain/:shareLink` - Allow public users to view standard shared bookmarks without authentication.
-- [ ] **Frontend client:** Build a rich, visual UI dashboard (React, Tailwind CSS, or Vanilla HTML/CSS/JS) to add/display links, documents, videos, and tags in interactive cards.
+- [ ] **Fix Routing / Parameter Bugs:**
+  - [ ] Mount the router in [deleteContenet.ts](file:///a:/web/week-15/brainly/src/routes/deleteContenet.ts) instead of mounting the raw controller function directly in [src/index.ts](file:///a:/web/week-15/brainly/src/index.ts).
+  - [ ] Correct the delete route from `POST /content/delete` to `DELETE /content/:id` to match REST standards and align with the controller's use of `req.params.id`.
+- [ ] **Implement Get Content API:**
+  - [ ] Implement `getAllContent` in [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) to retrieve all cards for a user.
+  - [ ] Add a `GET /api/v1/content` route mapped to this controller.
+- [ ] **Implement Sharing System:**
+  - [ ] `POST /api/v1/brain/share` - Toggle share-ability (generate/remove share hash link).
+  - [ ] `GET /api/v1/brain/:shareLink` - Retrieve shared cards publicly.
+- [ ] **Code Quality & Typos Cleanup:** Correct filenames and variable spellings (`singnup.ts` $\rightarrow$ `signup.ts`, `cotent.ts` $\rightarrow$ `content.ts`, `jwt_secert` $\rightarrow$ `jwt_secret`).
+- [ ] **Frontend client:** Build a responsive UI dashboard to visualize the saved links, documents, and tags.
 
 ---
 
 ## ⚙️ Configuration & Setup
 
 ### 1. Environment Variables
-Create a `.env` file in the root directory and define the following variables:
+Create a `.env` file in the root directory and configure the database URI and JWT secret key:
 ```env
 MONGO_URI=mongodb://localhost:27017/brainly
-jwt_secret=your_strong_jwt_secret_here
+jwt_secret=your_secure_jwt_secret_here
 ```
 
 ### 2. Installation
-To install the project dependencies, run:
+Install project dependencies:
 ```bash
 npm install
 ```
 
 ### 3. Build & Compile
-To compile TypeScript files into the `./dist` directory:
+Compile the TypeScript code:
 ```bash
 npm run build
 ```
 
-### 4. Start the Application
-To start the Express server (defaulting to Port `3000`):
+### 4. Running the Server
+Start the application (default port is `3000`):
 ```bash
 node dist/index.js
 ```
