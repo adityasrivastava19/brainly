@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { Types } from 'mongoose';
+import { mongo, type Types } from 'mongoose';
 import { contentSchema } from '../validation/cotent.js';
 import tag from '../model/tag.js';
 import content from '../model/content.js';
@@ -45,9 +45,6 @@ export async function createcontent(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server error" })
     }
 }
- export async function getCntent(req:Request,res :Response){
-    const userId=req.user 
- }
 // Request
 //    │
 //    ▼
@@ -64,3 +61,69 @@ export async function createcontent(req: Request, res: Response) {
 //    │
 //    ▼
 // Return JSON Response
+
+ export function deleteContenet(req:Request,res:Response)
+ {
+            try {
+                const {id}=req.params;
+                const userid=(req.user as {userid ?:string })?.userid;
+                if ( typeof id === 'string' &&!mongo.ObjectId.isValid(id))
+                    {
+                        return res.status(404).json({message:"Invalid content id "});
+                    } 
+                    // find the content in the datbase 
+                    const deletecontent=content.findOneAndDelete({
+                        _id:id,
+                        userId:userid
+                    })
+                    if(!deletecontent)
+                    {
+                        return res.status(404).json({message:"content doesnot exist"});
+                    }
+                    return res.status(200).json({message:"content deleted successfully"});
+            } catch (error) {
+                return res.status(404).json({message:"Server issue"});
+            }
+
+ }
+//                 Client
+//                    │
+//                    │ DELETE /api/v1/content/:id
+//                    │
+//                    ▼
+//           Authentication Middleware
+//                    │
+//         Verify JWT Token
+//                    │
+//         Extract req.userId
+//                    │
+//                    ▼
+//           Delete Controller
+//                    │
+//         Get id from req.params
+//                    │
+//                    ▼
+//      Is ObjectId Valid?
+//           │              │
+//         No│              │Yes
+//           ▼              ▼
+//  400 Bad Request     Query MongoDB
+//                      findOneAndDelete({
+//                         _id: id,
+//                         userId: req.userId
+//                      })
+//                           │
+//              ┌────────────┴────────────┐
+//              │                         │
+//        Document Found?            Not Found
+//              │                         │
+//           Yes│                         │No
+//              ▼                         ▼
+//  Delete Document             404 Not Found
+//              │
+//              ▼
+// 200 OK
+// {
+//   "message": "Content deleted successfully"
+// }
+
