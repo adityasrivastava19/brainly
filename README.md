@@ -30,13 +30,13 @@ brainly/
 │   │   └── middleware.ts          # JWT authentication middleware
 │   ├── controller/
 │   │   ├── login.ts               # Login / Signin controller
-│   │   ├── singup.ts              # User registration / Signup controller
+│   │   ├── signup.ts              # User registration / Signup controller
 │   │   └── content.ts             # Content creation, retrieval (stub), and deletion
 │   ├── routes/
-│   │   ├── singnup.ts             # Router for POST /signup
-│   │   ├── signin.ts              # Router for POST /signin
+│   │   ├── signup.ts              # Router for signup
+│   │   ├── signin.ts              # Router for signin
 │   │   ├── content.ts             # Router for POST /content
-│   │   └── deleteContenet.ts      # Router for POST /content/delete
+│   │   └── deleteContent.ts       # Router for DELETE /content/:id
 │   ├── model/
 │   │   ├── user.ts                # Mongoose Schema & Model for Users
 │   │   ├── content.ts             # Mongoose Schema & Model for User Content
@@ -47,7 +47,7 @@ brainly/
 │   │       └── index.d.ts         # Type declarations extending Express Request with 'user'
 │   ├── validation/
 │   │   ├── validate.ts            # Zod validation schema for user login/signup
-│   │   └── cotent.ts              # Zod validation schema for content payload
+│   │   └── content.ts             # Zod validation schema for content payload
 │   └── workdone                   # Simple log tracking completed milestones
 ├── .env                           # Environment variables configuration (gitignored)
 ├── tsconfig.json                  # TypeScript compilation configuration
@@ -56,7 +56,7 @@ brainly/
 
 * **Entry point:** [src/index.ts](file:///a:/web/week-15/brainly/src/index.ts)
 * **DB Setup:** [src/db.ts](file:///a:/web/week-15/brainly/src/db.ts)
-* **Validation Rules:** [src/validation/validate.ts](file:///a:/web/week-15/brainly/src/validation/validate.ts) & [src/validation/cotent.ts](file:///a:/web/week-15/brainly/src/validation/cotent.ts)
+* **Validation Rules:** [src/validation/validate.ts](file:///a:/web/week-15/brainly/src/validation/validate.ts) & [src/validation/content.ts](file:///a:/web/week-15/brainly/src/validation/content.ts)
 * **JWT Auth Middleware:** [src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts)
 
 ---
@@ -67,8 +67,8 @@ brainly/
 
 #### **1. Register a New User**
 * **Endpoint:** `POST /api/v1/signup` (or `POST /signup`)
-* **Route:** [src/routes/singnup.ts](file:///a:/web/week-15/brainly/src/routes/singnup.ts)
-* **Controller:** [src/controller/singup.ts](file:///a:/web/week-15/brainly/src/controller/singup.ts)
+* **Route:** [src/routes/signup.ts](file:///a:/web/week-15/brainly/src/routes/signup.ts)
+* **Controller:** [src/controller/signup.ts](file:///a:/web/week-15/brainly/src/controller/signup.ts)
 * **Request Body (JSON):**
   ```json
   {
@@ -92,6 +92,8 @@ brainly/
 
 ### 🗂️ Content Management API
 
+Both Content APIs are mounted at prefix `/content` and `/api/v1/content` respectively in the main router setup.
+
 #### **1. Add Content Card**
 * **Endpoint:** `POST /api/v1/content` (or `POST /content`)
 * **Headers:** `Authorization: Bearer <JWT_TOKEN>`
@@ -106,7 +108,7 @@ brainly/
     "tag": ["tech", "learning"]
   }
   ```
-* **Validation Rules (`contentSchema` in [src/validation/cotent.ts](file:///a:/web/week-15/brainly/src/validation/cotent.ts)):**
+* **Validation Rules (`contentSchema` in [src/validation/content.ts](file:///a:/web/week-15/brainly/src/validation/content.ts)):**
   * `title`: String (1 to 100 characters).
   * `link`: String (must be a valid URL).
   * `type`: Enum (`"document"`, `"tweet"`, `"youtube"`, `"link"`).
@@ -114,11 +116,11 @@ brainly/
 * **Flow:** Verifies Bearer token with [auth middleware](file:///a:/web/week-15/brainly/src/middleware/middleware.ts) $\rightarrow$ Extracts `userid` $\rightarrow$ Checks for existing tags in the tags collection; creates and saves new ones if they don't exist $\rightarrow$ Creates the content document linking the `userid` and array of `tagref` ObjectIds $\rightarrow$ Populates and returns the complete object.
 
 #### **2. Delete Content Card**
-* **Endpoint:** `POST /api/v1/content/delete` (note: controller expects a URL parameter `id` as `req.params.id`)
+* **Endpoint:** `DELETE /api/v1/content/:id` (or `DELETE /content/:id`)
 * **Headers:** `Authorization: Bearer <JWT_TOKEN>`
-* **Route:** [src/routes/deleteContenet.ts](file:///a:/web/week-15/brainly/src/routes/deleteContenet.ts)
+* **Route:** [src/routes/deleteContent.ts](file:///a:/web/week-15/brainly/src/routes/deleteContent.ts)
 * **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (specifically the `deleteContent` function)
-* **Flow:** Verifies Bearer token $\rightarrow$ Validates whether `id` is a valid MongoDB ObjectId $\rightarrow$ Performs a `findOneAndDelete` matching the `_id` and the user's `userId`.
+* **Flow:** Verifies Bearer token $\rightarrow$ Validates whether `id` is a valid MongoDB ObjectId $\rightarrow$ Performs an awaited `findOneAndDelete` matching the `_id` and the user's `userid`.
 
 ---
 
@@ -129,24 +131,25 @@ brainly/
 - [x] MongoDB connection setup with Mongoose ([src/db.ts](file:///a:/web/week-15/brainly/src/db.ts))
 - [x] Database model definitions ([src/model/](file:///a:/web/week-15/brainly/src/model/))
 - [x] Schema input validations using Zod ([src/validation/](file:///a:/web/week-15/brainly/src/validation/))
-- [x] Robust password hashing integration using `bcrypt` ([src/controller/singup.ts](file:///a:/web/week-15/brainly/src/controller/singup.ts))
+- [x] Robust password hashing integration using `bcrypt` ([src/controller/signup.ts](file:///a:/web/week-15/brainly/src/controller/signup.ts))
 - [x] Complete JWT Authentication Flow ([src/controller/login.ts](file:///a:/web/week-15/brainly/src/controller/login.ts))
 - [x] JWT Bearer Token validation middleware ([src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts))
 - [x] Custom types extending Express request object with decoded token payload ([src/types/express/index.d.ts](file:///a:/web/week-15/brainly/src/types/express/index.d.ts))
 - [x] Create Content API with dynamic tag generation ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
 - [x] Delete Content controller implementation ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
+- [x] **Fix Routing & Parameter Bugs:**
+  - [x] Mounted the router in [deleteContent.ts](file:///a:/web/week-15/brainly/src/routes/deleteContent.ts) instead of mounting the raw controller function directly in [src/index.ts](file:///a:/web/week-15/brainly/src/index.ts).
+  - [x] Corrected the delete route from `POST /content/delete` to `DELETE /content/:id` to match REST standards and aligned with the controller's use of `req.params.id`.
+- [x] **Code Quality & Typos Cleanup:**
+  - [x] Corrected filenames and variable spellings (`singnup.ts` $\rightarrow$ `signup.ts`, `cotent.ts` $\rightarrow$ `content.ts`, `deleteContenet.ts` $\rightarrow$ `deleteContent.ts`).
 
 ### Future Tasks & Next Steps
-- [ ] **Fix Routing / Parameter Bugs:**
-  - [ ] Mount the router in [deleteContenet.ts](file:///a:/web/week-15/brainly/src/routes/deleteContenet.ts) instead of mounting the raw controller function directly in [src/index.ts](file:///a:/web/week-15/brainly/src/index.ts).
-  - [ ] Correct the delete route from `POST /content/delete` to `DELETE /content/:id` to match REST standards and align with the controller's use of `req.params.id`.
 - [ ] **Implement Get Content API:**
   - [ ] Implement `getAllContent` in [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) to retrieve all cards for a user.
   - [ ] Add a `GET /api/v1/content` route mapped to this controller.
 - [ ] **Implement Sharing System:**
   - [ ] `POST /api/v1/brain/share` - Toggle share-ability (generate/remove share hash link).
   - [ ] `GET /api/v1/brain/:shareLink` - Retrieve shared cards publicly.
-- [ ] **Code Quality & Typos Cleanup:** Correct filenames and variable spellings (`singnup.ts` $\rightarrow$ `signup.ts`, `cotent.ts` $\rightarrow$ `content.ts`, `jwt_secert` $\rightarrow$ `jwt_secret`).
 - [ ] **Frontend client:** Build a responsive UI dashboard to visualize the saved links, documents, and tags.
 
 ---
@@ -157,7 +160,7 @@ brainly/
 Create a `.env` file in the root directory and configure the database URI and JWT secret key:
 ```env
 MONGO_URI=mongodb://localhost:27017/brainly
-jwt_secret=your_secure_jwt_secret_here
+jwt_secert=your_secure_jwt_secret_here
 ```
 
 ### 2. Installation

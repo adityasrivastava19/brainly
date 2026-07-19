@@ -4,6 +4,6 @@ import { auth } from '../middleware/middleware.js';
 
 const router = Router();
 
-router.post('/content', auth, createcontent);
+router.post('/', auth, createcontent);
 
 export default router;

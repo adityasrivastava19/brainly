@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { mongo, type Types } from 'mongoose';
-import { contentSchema } from '../validation/cotent.js';
+import { contentSchema } from '../validation/content.js';
 import tag from '../model/tag.js';
 import content from '../model/content.js';
 export async function createcontent(req: Request, res: Response) {
@@ -62,7 +62,7 @@ export async function createcontent(req: Request, res: Response) {
 //    ▼
 // Return JSON Response
 
- export function deleteContent(req:Request,res:Response)
+ export async function deleteContent(req:Request,res:Response)
  {
             try {
                 const {id}=req.params;
@@ -72,10 +72,10 @@ export async function createcontent(req: Request, res: Response) {
                         return res.status(404).json({message:"Invalid content id "});
                     } 
                     // find the content in the datbase 
-                    const deletecontent=content.findOneAndDelete({
+                    const deletecontent=await content.findOneAndDelete({
                         _id:id,
-                        userId:userid
-                    })
+                        userid:userid
+                    } as any)
                     if(!deletecontent)
                     {
                         return res.status(404).json({message:"content doesnot exist"});

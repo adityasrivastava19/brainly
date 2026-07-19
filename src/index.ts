@@ -1,9 +1,9 @@
 import express from 'express';
 import { connect } from './db.js';
-import signupRouter from './routes/singnup.js';
+import signupRouter from './routes/signup.js';
 import signinRouter from './routes/signin.js';
 import contentRouter from './routes/content.js';
-import { deleteContent } from './controller/content.js';
+import deleteRouter from './routes/deleteContent.js';
 
 const app = express();
 
@@ -17,10 +17,14 @@ app.use('/api/v1', signupRouter); // Allows POST /api/v1/signup
 app.use(signinRouter);          // Allows POST /signin
 app.use('/api/v1', signinRouter); // Allows POST /api/v1/signin
 
-// Mount the content router
-app.use(contentRouter);          // Allows POST /content
-app.use('/api/v1', contentRouter); // Allows POST /api/v1/content
-app.use('/api/v1',deleteContent);///api/v1/content/content/delete
+// Mount content endpoints
+app.use('/content', contentRouter);
+app.use('/api/v1/content', contentRouter);
+
+// Mount delete endpoints
+app.use('/content', deleteRouter);
+app.use('/api/v1/content', deleteRouter);
+
 connect();
 
 
