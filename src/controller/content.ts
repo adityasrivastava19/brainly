@@ -45,3 +45,22 @@ export async function createcontent(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server error" })
     }
 }
+ export async function getCntent(req:Request,res :Response){
+    const userId=req.user 
+ }
+// Request
+//    │
+//    ▼
+// Auth Middleware
+//    │
+//    ▼
+// req.user.id
+//    │
+//    ▼
+// Content.find({ userId })
+//    │
+//    ▼
+// .populate("tag")
+//    │
+//    ▼
+// Return JSON Response
