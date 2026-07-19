@@ -62,7 +62,7 @@ export async function createcontent(req: Request, res: Response) {
 //    ▼
 // Return JSON Response
 
- export function deleteContenet(req:Request,res:Response)
+ export function deleteContent(req:Request,res:Response)
  {
             try {
                 const {id}=req.params;
@@ -126,4 +126,12 @@ export async function createcontent(req: Request, res: Response) {
 // {
 //   "message": "Content deleted successfully"
 // }
+export async function getAllContent(req:Request,res:Response)
+{
+    try {
+        
+    } catch (error) {
+        
+    }
+}
 
