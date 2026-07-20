@@ -129,9 +129,15 @@ export async function createcontent(req: Request, res: Response) {
 export async function getAllContent(req:Request,res:Response)
 {
     try {
-        
+         const userId = (req.user as {userid?:string}).userid;
+         if (!userId) {
+             return res.status(401).json({message: "Unauthorized"});
+         }
+         const allcontent = await content.find({ userid: userId }).populate('tagref');
+         return res.status(200).json({ content: allcontent });
     } catch (error) {
-        
+        console.error(error);
+        return res.status(500).json({message:"Internal server error"});
     }
 }
 

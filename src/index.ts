@@ -22,8 +22,8 @@ app.use('/content', contentRouter);
 app.use('/api/v1/content', contentRouter);
 
 // Mount delete endpoints
-app.use('/content', deleteRouter);
-app.use('/api/v1/content', deleteRouter);
+app.use(deleteRouter);
+app.use('/api/v1', deleteRouter);
 
 connect();
 
