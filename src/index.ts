@@ -4,7 +4,7 @@ import signupRouter from './routes/signup.js';
 import signinRouter from './routes/signin.js';
 import contentRouter from './routes/content.js';
 import deleteRouter from './routes/deleteContent.js';
-import { getAllContent } from './controller/content.js';
+import  allContentRoute from "./routes/gelAllContnt.js"
 
 const app = express();
 
@@ -18,7 +18,7 @@ app.use('/api/v1/content', contentRouter);
 
 app.use('/api/v1', deleteRouter);
 
-app.use('/api/v1/contentAll',getAllContent);
+app.use('/api/v1/contentAll',allContentRoute);
 
 connect();
 
