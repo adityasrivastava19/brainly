@@ -8,5 +8,9 @@ const link=new mongoose.Schema({
         type:mongoose.Schema.ObjectId,
         ref:"user",
         required:true
+    },
+    isshare:{
+        type:Boolean,
+        default:false
     }
 })
