@@ -11,12 +11,12 @@ const content=new mongoose.Schema({
     },
     userid:{
         type:mongoose.Schema.ObjectId,
-        ref:"user",
+        ref:"User",
         required:true
     },
     tagref:[{
         type:mongoose.Schema.ObjectId,
-        ref:"tag",
+        ref:"Tag",
         required:true
     }],
     type:{
@@ -26,4 +26,4 @@ const content=new mongoose.Schema({
         
     }
 })
-export default mongoose.model("content",content)
+export default mongoose.model("Content",content)

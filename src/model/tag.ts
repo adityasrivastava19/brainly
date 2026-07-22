@@ -4,4 +4,4 @@ const tag=new mongoose.Schema({
         type:String
     }
 })
-export default mongoose.model('tag',tag)
+export default mongoose.model('Tag',tag)

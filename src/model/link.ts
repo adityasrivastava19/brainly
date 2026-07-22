@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
-const link=new mongoose.Schema({
+const linkSchema=new mongoose.Schema({
     hash:{
         type:String,
         required:true
     },
     userid:{
         type:mongoose.Schema.ObjectId,
-        ref:"user",
+        ref:"User",
         required:true
     },
     isshare:{
@@ -14,3 +14,4 @@ const link=new mongoose.Schema({
         default:false
     }
 })
+export default mongoose.model("Link",linkSchema)

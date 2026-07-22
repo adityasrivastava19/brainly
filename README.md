@@ -31,12 +31,16 @@ brainly/
 │   ├── controller/
 │   │   ├── login.ts               # Login / Signin controller
 │   │   ├── signup.ts              # User registration / Signup controller
-│   │   └── content.ts             # Content creation, retrieval (stub), and deletion
+│   │   ├── content.ts             # Content creation, retrieval, and deletion
+│   │   ├── enableSharableLink.ts  # Enable shareable hash link controller
+│   │   ├── disableShareableLink.ts # Disable shareable hash link controller
+│   │   └── getSharedBrain.ts      # Public shared brain retrieval controller
 │   ├── routes/
 │   │   ├── signup.ts              # Router for signup
 │   │   ├── signin.ts              # Router for signin
-│   │   ├── content.ts             # Router for POST /content
-│   │   └── deleteContent.ts       # Router for DELETE /content/:id
+│   │   ├── content.ts             # Router for /content (POST, GET, DELETE)
+│   │   ├── sharableLink.ts        # Router for /shareable-link (POST, DELETE)
+│   │   └── brain.ts               # Router for public shared link GET /brain/:shareLink
 │   ├── model/
 │   │   ├── user.ts                # Mongoose Schema & Model for Users
 │   │   ├── content.ts             # Mongoose Schema & Model for User Content
@@ -66,7 +70,7 @@ brainly/
 ### 🔐 Authentication API
 
 #### **1. Register a New User**
-* **Endpoint:** `POST /api/v1/signup` (or `POST /signup`)
+* **Endpoint:** `POST /api/v1/signup`
 * **Route:** [src/routes/signup.ts](file:///a:/web/week-15/brainly/src/routes/signup.ts)
 * **Controller:** [src/controller/signup.ts](file:///a:/web/week-15/brainly/src/controller/signup.ts)
 * **Request Body (JSON):**
@@ -79,26 +83,26 @@ brainly/
 * **Validation Rules (`loginSchema` in [src/validation/validate.ts](file:///a:/web/week-15/brainly/src/validation/validate.ts)):**
   * `username`: String (3 to 10 characters).
   * `password`: String (8 to 20 characters), requiring at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
-* **Flow:** Validates body payload $\rightarrow$ Checks if username is already taken $\rightarrow$ Hashes password using `bcrypt` (10 rounds) $\rightarrow$ Creates user record in DB $\rightarrow$ Generates and returns a signed JWT token (expires in 7 days).
+* **Flow:** Validates body payload $\rightarrow$ Checks if username exists $\rightarrow$ Hashes password using `bcrypt` $\rightarrow$ Creates user in DB $\rightarrow$ Returns signed JWT token (`201 Created`).
 
 #### **2. Sign In User**
-* **Endpoint:** `POST /api/v1/signin` (or `POST /signin`)
+* **Endpoint:** `POST /api/v1/signin`
 * **Route:** [src/routes/signin.ts](file:///a:/web/week-15/brainly/src/routes/signin.ts)
 * **Controller:** [src/controller/login.ts](file:///a:/web/week-15/brainly/src/controller/login.ts)
 * **Request Body (JSON):** Same as signup.
-* **Flow:** Validates body payload $\rightarrow$ Retrieves user record by username $\rightarrow$ Compares hashed passwords via `bcrypt.compare` $\rightarrow$ Generates and returns a signed JWT token.
+* **Flow:** Validates payload $\rightarrow$ Compares passwords via `bcrypt.compare` $\rightarrow$ Returns signed JWT token (`200 OK`).
 
 ---
 
 ### 🗂️ Content Management API
 
-Both Content APIs are mounted at prefix `/content` and `/api/v1/content` respectively in the main router setup.
+Mounted at prefix `/api/v1/content`.
 
 #### **1. Add Content Card**
-* **Endpoint:** `POST /api/v1/content` (or `POST /content`)
+* **Endpoint:** `POST /api/v1/content`
 * **Headers:** `Authorization: Bearer <JWT_TOKEN>`
 * **Route:** [src/routes/content.ts](file:///a:/web/week-15/brainly/src/routes/content.ts)
-* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (specifically the `createcontent` function)
+* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (`createcontent`)
 * **Request Body (JSON):**
   ```json
   {
@@ -108,19 +112,56 @@ Both Content APIs are mounted at prefix `/content` and `/api/v1/content` respect
     "tag": ["tech", "learning"]
   }
   ```
-* **Validation Rules (`contentSchema` in [src/validation/content.ts](file:///a:/web/week-15/brainly/src/validation/content.ts)):**
-  * `title`: String (1 to 100 characters).
-  * `link`: String (must be a valid URL).
-  * `type`: Enum (`"document"`, `"tweet"`, `"youtube"`, `"link"`).
-  * `tag`: Array of strings (optional).
-* **Flow:** Verifies Bearer token with [auth middleware](file:///a:/web/week-15/brainly/src/middleware/middleware.ts) $\rightarrow$ Extracts `userid` $\rightarrow$ Checks for existing tags in the tags collection; creates and saves new ones if they don't exist $\rightarrow$ Creates the content document linking the `userid` and array of `tagref` ObjectIds $\rightarrow$ Populates and returns the complete object.
 
-#### **2. Delete Content Card**
-* **Endpoint:** `DELETE /api/v1/content/:id` (or `DELETE /content/:id`)
+#### **2. Get All Content**
+* **Endpoint:** `GET /api/v1/content`
 * **Headers:** `Authorization: Bearer <JWT_TOKEN>`
-* **Route:** [src/routes/deleteContent.ts](file:///a:/web/week-15/brainly/src/routes/deleteContent.ts)
-* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (specifically the `deleteContent` function)
-* **Flow:** Verifies Bearer token $\rightarrow$ Validates whether `id` is a valid MongoDB ObjectId $\rightarrow$ Performs an awaited `findOneAndDelete` matching the `_id` and the user's `userid`.
+* **Route:** [src/routes/content.ts](file:///a:/web/week-15/brainly/src/routes/content.ts)
+* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (`getAllContent`)
+
+#### **3. Delete Content Card**
+* **Endpoint:** `DELETE /api/v1/content/:id`
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Route:** [src/routes/content.ts](file:///a:/web/week-15/brainly/src/routes/content.ts)
+* **Controller:** [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) (`deleteContent`)
+
+---
+
+### 🔗 Shareable Link & Public Brain API
+
+#### **1. Enable Shareable Link**
+* **Endpoint:** `POST /api/v1/shareable-link`
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Route:** [src/routes/sharableLink.ts](file:///a:/web/week-15/brainly/src/routes/sharableLink.ts)
+* **Controller:** [src/controller/enableSharableLink.ts](file:///a:/web/week-15/brainly/src/controller/enableSharableLink.ts)
+* **Response:** Returns hash link string (e.g., `http://localhost:3000/hash_string`).
+
+#### **2. Disable Shareable Link**
+* **Endpoint:** `DELETE /api/v1/shareable-link`
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Route:** [src/routes/sharableLink.ts](file:///a:/web/week-15/brainly/src/routes/sharableLink.ts)
+* **Controller:** [src/controller/disableShareableLink.ts](file:///a:/web/week-15/brainly/src/controller/disableShareableLink.ts)
+
+#### **3. View Public Shared Brain**
+* **Endpoint:** `GET /api/v1/brain/:shareLink`
+* **Headers:** None (Public)
+* **Route:** [src/routes/brain.ts](file:///a:/web/week-15/brainly/src/routes/brain.ts)
+* **Controller:** [src/controller/getSharedBrain.ts](file:///a:/web/week-15/brainly/src/controller/getSharedBrain.ts)
+* **Response Body (JSON):**
+  ```json
+  {
+    "username": "user123",
+    "content": [
+      {
+        "_id": "...",
+        "title": "My Saved Article",
+        "link": "https://example.com",
+        "type": "document",
+        "tagref": [{ "_id": "...", "title": "learning" }]
+      }
+    ]
+  }
+  ```
 
 ---
 
@@ -131,36 +172,25 @@ Both Content APIs are mounted at prefix `/content` and `/api/v1/content` respect
 - [x] MongoDB connection setup with Mongoose ([src/db.ts](file:///a:/web/week-15/brainly/src/db.ts))
 - [x] Database model definitions ([src/model/](file:///a:/web/week-15/brainly/src/model/))
 - [x] Schema input validations using Zod ([src/validation/](file:///a:/web/week-15/brainly/src/validation/))
-- [x] Robust password hashing integration using `bcrypt` ([src/controller/signup.ts](file:///a:/web/week-15/brainly/src/controller/signup.ts))
-- [x] Complete JWT Authentication Flow ([src/controller/login.ts](file:///a:/web/week-15/brainly/src/controller/login.ts))
-- [x] JWT Bearer Token validation middleware ([src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts))
-- [x] Custom types extending Express request object with decoded token payload ([src/types/express/index.d.ts](file:///a:/web/week-15/brainly/src/types/express/index.d.ts))
-- [x] Create Content API with dynamic tag generation ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
-- [x] Delete Content controller implementation ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
-- [x] **Fix Routing & Parameter Bugs:**
-  - [x] Mounted the router in [deleteContent.ts](file:///a:/web/week-15/brainly/src/routes/deleteContent.ts) instead of mounting the raw controller function directly in [src/index.ts](file:///a:/web/week-15/brainly/src/index.ts).
-  - [x] Corrected the delete route from `POST /content/delete` to `DELETE /content/:id` to match REST standards and aligned with the controller's use of `req.params.id`.
-- [x] **Code Quality & Typos Cleanup:**
-  - [x] Corrected filenames and variable spellings (`singnup.ts` $\rightarrow$ `signup.ts`, `cotent.ts` $\rightarrow$ `content.ts`, `deleteContenet.ts` $\rightarrow$ `deleteContent.ts`).
-
-### Future Tasks & Next Steps
-- [ ] **Implement Get Content API:**
-  - [ ] Implement `getAllContent` in [src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts) to retrieve all cards for a user.
-  - [ ] Add a `GET /api/v1/content` route mapped to this controller.
-- [ ] **Implement Sharing System:**
-  - [ ] `POST /api/v1/brain/share` - Toggle share-ability (generate/remove share hash link).
-  - [ ] `GET /api/v1/brain/:shareLink` - Retrieve shared cards publicly.
-- [ ] **Frontend client:** Build a responsive UI dashboard to visualize the saved links, documents, and tags.
+- [x] Password hashing integration using `bcrypt` ([src/controller/signup.ts](file:///a:/web/week-15/brainly/src/controller/signup.ts))
+- [x] JWT Authentication Flow & Bearer Middleware ([src/middleware/middleware.ts](file:///a:/web/week-15/brainly/src/middleware/middleware.ts))
+- [x] Create, Get All, and Delete Content APIs ([src/controller/content.ts](file:///a:/web/week-15/brainly/src/controller/content.ts))
+- [x] **Complete Sharing System:**
+  - [x] `POST /api/v1/shareable-link` - Enable shareable link.
+  - [x] `DELETE /api/v1/shareable-link` - Disable shareable link.
+  - [x] `GET /api/v1/brain/:shareLink` - Retrieve shared cards publicly ([src/controller/getSharedBrain.ts](file:///a:/web/week-15/brainly/src/controller/getSharedBrain.ts)).
+- [x] **CORS Support:** Integrated `cors` middleware for cross-origin web apps.
+- [x] **Bug Fixes:** Fixed Zod URL schema syntax, Mongoose model reference casing, and standardized HTTP status codes.
 
 ---
 
 ## ⚙️ Configuration & Setup
 
 ### 1. Environment Variables
-Create a `.env` file in the root directory and configure the database URI and JWT secret key:
+Create a `.env` file in the root directory:
 ```env
 MONGO_URI=mongodb://localhost:27017/brainly
-jwt_secert=your_secure_jwt_secret_here
+jwt_secret=your_secure_jwt_secret_here
 ```
 
 ### 2. Installation
@@ -180,3 +210,4 @@ Start the application (default port is `3000`):
 ```bash
 node dist/index.js
 ```
+

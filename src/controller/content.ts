@@ -8,7 +8,7 @@ export async function createcontent(req: Request, res: Response) {
         // zod validation 
         const result = contentSchema.safeParse(req.body);
         if (!result.success) {
-            return res.status(401).json({ message: result.error.issues })
+            return res.status(400).json({ message: result.error.issues });
         }
         const { title, link, type, tag: tags } = result.data;
         //bring out the user id from the auth middleware
@@ -67,10 +67,9 @@ export async function createcontent(req: Request, res: Response) {
             try {
                 const {id}=req.params;
                 const userid=(req.user as {userid ?:string })?.userid;
-                if ( typeof id === 'string' &&!mongo.ObjectId.isValid(id))
-                    {
-                        return res.status(404).json({message:"Invalid content id "});
-                    } 
+                if (typeof id === 'string' && !mongo.ObjectId.isValid(id)) {
+                    return res.status(400).json({ message: "Invalid content id" });
+                } 
                     // find the content in the datbase 
                     const deletecontent=await content.findOneAndDelete({
                         _id:id,
@@ -82,7 +81,7 @@ export async function createcontent(req: Request, res: Response) {
                     }
                     return res.status(200).json({message:"content deleted successfully"});
             } catch (error) {
-                return res.status(404).json({message:"Server issue"});
+                return res.status(500).json({ message: "Internal server error" });
             }
 
  }
